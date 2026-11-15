@@ -5,26 +5,27 @@ import {
     getAuth,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    signOut
 } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js";
 
 import {
     getFirestore,
-    collection,
     doc,
     setDoc,
     getDoc,
-    getDocs,
+    updateDoc,
+    collection,
     addDoc,
     query,
     where,
+    orderBy,
     onSnapshot,
+    getDocs,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js";
 
 // FIREBASE AYARLARI
-
 const firebaseConfig = {
     apiKey: "AIzaSyCwwEY9UuOs71ZjHgMIknRIwLqXFsTh6es",
     authDomain: "messenapp-1daa6.firebaseapp.com",
@@ -35,75 +36,84 @@ const firebaseConfig = {
     measurementId: "G-JCLKWJF88M"
 };
 
+// BAŞLAT
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
 // HTML ELEMANLARI
-
 const $ = id => document.getElementById(id);
 
 const loginScreen = $("loginScreen");
 const appScreen = $("appScreen");
+const conversationScreen = $("conversationScreen");
 
 const emailInput = $("email");
 const passwordInput = $("password");
+const loginError = $("loginError");
 
 const loginBtn = $("loginBtn");
 const registerBtn = $("registerBtn");
-const loginError = $("loginError");
 
-const searchInput = $("userSearch");
-const chatList = $("chatList");
+const userSearch = $("userSearch");
 const friendsList = $("friendsList");
+const chatList = $("chatList");
 
-const messagesBox = $("messages");
+const messages = $("messages");
 const messageInput = $("messageInput");
 const messageForm = $("messageForm");
-
-const logoutBtn = $("logoutBtn");
-const backBtn = $("backBtn");
 
 const profileName = $("profileName");
 const profileEmail = $("profileEmail");
 const newUsername = $("newUsername");
-const saveProfileBtn = $("saveProfileBtn");
-
-const conversationName = $("receiverName");
-const conversationScreen = $("conversationScreen");
 
 let currentUser = null;
-let activeChatId = null;
-let activeReceiver = null;
+let currentChatId = null;
+let currentReceiver = null;
 
-let unsubscribeChats = null;
 let unsubscribeMessages = null;
-let searchTimeout = null;
-
-// EKRAN KONTROLÜ
+let unsubscribeChats = null;
 
 function showError(message) {
     loginError.textContent = message;
 }
 
-function showApp(loggedIn) {
-    loginScreen.hidden = loggedIn;
-    appScreen.hidden = !loggedIn;
+function translateError(error) {
+    const errors = {
+        "auth/email-already-in-use": "Bu e-posta zaten kayıtlı.",
+        "auth/invalid-email": "E-posta adresi geçersiz.",
+        "auth/weak-password": "Şifren en az 6 karakter olmalı.",
+        "auth/user-not-found": "Bu hesap bulunamadı.",
+        "auth/wrong-password": "Şifre yanlış.",
+        "auth/invalid-credential": "E-posta veya şifre hatalı.",
+        "auth/too-many-requests": "Çok fazla deneme yaptın. Biraz bekle.",
+        "auth/network-request-failed": "İnternet bağlantını kontrol et.",
+        "auth/operation-not-allowed": "Firebase'de e-posta ile giriş etkin değil.",
+        "auth/unauthorized-domain": "Bu site Firebase yetkili alan adlarında bulunmuyor."
+    };
+
+    return errors[error.code] || "Bir hata oluştu: " + error.message;
 }
 
-// KAYIT OL
-
+// HESAP OLUŞTUR
 registerBtn.addEventListener("click", async () => {
     const email = emailInput.value.trim();
     const password = passwordInput.value;
 
+    showError("");
+
     if (!email || !password) {
-        return showError("E-posta ve şifreni doldur!");
+        showError("E-posta ve şifreni gir.");
+        return;
     }
 
     if (password.length < 6) {
-        return showError("Şifre en az 6 karakter olmalı!");
+        showError("Şifren en az 6 karakter olmalı.");
+        return;
     }
+
+    registerBtn.disabled = true;
+    registerBtn.textContent = "Hesap oluşturuluyor...";
 
     try {
         const result = await createUserWithEmailAndPassword(
@@ -125,105 +135,128 @@ registerBtn.addEventListener("click", async () => {
         showError("");
 
     } catch (error) {
-        showError("Kayıt hatası: " + error.message);
+        showError(translateError(error));
+    } finally {
+        registerBtn.disabled = false;
+        registerBtn.textContent = "Yeni Hesap Oluştur";
     }
 });
 
 // GİRİŞ YAP
-
 loginBtn.addEventListener("click", async () => {
     const email = emailInput.value.trim();
     const password = passwordInput.value;
 
+    showError("");
+
     if (!email || !password) {
-        return showError("E-posta ve şifreni gir!");
+        showError("E-posta ve şifreni gir.");
+        return;
     }
+
+    loginBtn.disabled = true;
+    loginBtn.textContent = "Giriş yapılıyor...";
 
     try {
         await signInWithEmailAndPassword(auth, email, password);
         showError("");
-
     } catch (error) {
-        showError("Giriş hatası: " + error.message);
+        showError(translateError(error));
+    } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = "Giriş Yap";
     }
 });
 
-// OTURUM KONTROLÜ
+// ENTER İLE GİRİŞ
+passwordInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") loginBtn.click();
+});
 
+// OTURUM KONTROLÜ
 onAuthStateChanged(auth, async user => {
     currentUser = user;
 
-    if (!user) {
-        showApp(false);
+    if (user) {
+        loginScreen.hidden = true;
+        appScreen.hidden = false;
+        conversationScreen.hidden = true;
+
+        await loadProfile();
+        loadChats();
+    } else {
+        loginScreen.hidden = false;
+        appScreen.hidden = true;
 
         if (unsubscribeChats) unsubscribeChats();
         if (unsubscribeMessages) unsubscribeMessages();
 
-        unsubscribeChats = null;
-        unsubscribeMessages = null;
-
-        activeChatId = null;
-        activeReceiver = null;
-
-        conversationScreen.hidden = true;
-        return;
-    }
-
-    showApp(true);
-
-    try {
-        const userDoc = await getDoc(
-            doc(db, "users", user.uid)
-        );
-
-        if (userDoc.exists()) {
-            const data = userDoc.data();
-
-            profileName.textContent = data.username || "Kullanıcı";
-            profileEmail.textContent = data.email || user.email || "";
-            newUsername.value = data.username || "";
-        }
-
-        loadChats();
-
-    } catch (error) {
-        console.error(error);
-        alert("Profil yüklenemedi: " + error.message);
+        currentChatId = null;
+        currentReceiver = null;
     }
 });
 
-// PROFİL KAYDET
+// PROFİLİ YÜKLE
+async function loadProfile() {
+    if (!currentUser) return;
 
-saveProfileBtn.addEventListener("click", async () => {
+    try {
+        const userRef = doc(db, "users", currentUser.uid);
+        const snap = await getDoc(userRef);
+
+        if (!snap.exists()) {
+            const username = currentUser.email.split("@")[0];
+
+            await setDoc(userRef, {
+                uid: currentUser.uid,
+                email: currentUser.email,
+                username,
+                usernameLower: username.toLowerCase(),
+                createdAt: serverTimestamp()
+            });
+
+            profileName.textContent = username;
+            newUsername.value = username;
+        } else {
+            const data = snap.data();
+
+            profileName.textContent = data.username || "Kullanıcı";
+            newUsername.value = data.username || "";
+        }
+
+        profileEmail.textContent = currentUser.email;
+
+    } catch (error) {
+        console.error("Profil yüklenemedi:", error);
+    }
+}
+
+// PROFİL KAYDET
+$("saveProfileBtn").addEventListener("click", async () => {
     if (!currentUser) return;
 
     const username = newUsername.value.trim();
 
-    if (!username) {
-        return alert("Kullanıcı adı yaz!");
+    if (username.length < 3) {
+        alert("Kullanıcı adı en az 3 karakter olmalı.");
+        return;
     }
 
     try {
-        await setDoc(
-            doc(db, "users", currentUser.uid),
-            {
-                username: username,
-                usernameLower: username.toLowerCase()
-            },
-            { merge: true }
-        );
+        await updateDoc(doc(db, "users", currentUser.uid), {
+            username,
+            usernameLower: username.toLowerCase()
+        });
 
         profileName.textContent = username;
-
-        alert("Profil kaydedildi!");
+        alert("Profilin kaydedildi!");
 
     } catch (error) {
-        alert("Profil hatası: " + error.message);
+        alert("Profil kaydedilemedi: " + error.message);
     }
 });
 
-// SEKMELER
-
+// SEKME DEĞİŞTİR
 document.querySelectorAll(".tab").forEach(tab => {
     tab.addEventListener("click", () => {
         document.querySelectorAll(".tab").forEach(item => {
@@ -235,67 +268,70 @@ document.querySelectorAll(".tab").forEach(tab => {
         $("chatsPage").hidden = tab.dataset.tab !== "chats";
         $("friendsPage").hidden = tab.dataset.tab !== "friends";
         $("profilePage").hidden = tab.dataset.tab !== "profile";
+
+        conversationScreen.hidden = true;
     });
 });
 
-// KULLANICI ARAMA
-
-searchInput.addEventListener("input", () => {
-    clearTimeout(searchTimeout);
-
-    searchTimeout = setTimeout(searchUsers, 400);
+// PROFİL KISAYOLU
+$("profileBtn").addEventListener("click", () => {
+    document.querySelector('[data-tab="profile"]').click();
 });
 
-async function searchUsers() {
-    if (!currentUser) return;
+// ARAMA KISAYOLU
+$("searchBtn").addEventListener("click", () => {
+    userSearch.focus();
+    userSearch.scrollIntoView({ behavior: "smooth", block: "center" });
+});
 
-    const term = searchInput.value.trim().toLowerCase();
+// KULLANICI ARAMA
+let searchTimeout;
 
+userSearch.addEventListener("input", () => {
+    clearTimeout(searchTimeout);
+
+    searchTimeout = setTimeout(() => {
+        searchUsers(userSearch.value.trim().toLowerCase());
+    }, 350);
+});
+
+async function searchUsers(search) {
     friendsList.innerHTML = "";
 
-    if (!term) {
-        friendsList.textContent = "Kullanıcı aramak için isim yaz.";
-        return;
-    }
+    if (!search || !currentUser) return;
 
     try {
-        const usersQuery = query(
+        const q = query(
             collection(db, "users"),
-            where("usernameLower", ">=", term),
-            where("usernameLower", "<=", term + "\uf8ff")
+            where("usernameLower", ">=", search),
+            where("usernameLower", "<=", search + "\uf8ff")
         );
 
-        const result = await getDocs(usersQuery);
-
-        let found = 0;
+        const result = await getDocs(q);
 
         result.forEach(userDoc => {
             const user = userDoc.data();
 
             if (user.uid === currentUser.uid) return;
 
-            found++;
-
-            const item = createUserItem(user);
-
-            friendsList.appendChild(item);
+            createUserItem(user, friendsList);
         });
 
-        if (found === 0) {
-            friendsList.textContent = "Kullanıcı bulunamadı.";
+        if (friendsList.innerHTML === "") {
+            friendsList.innerHTML = "<p style='padding:20px'>Kullanıcı bulunamadı.</p>";
         }
 
         document.querySelector('[data-tab="friends"]').click();
 
     } catch (error) {
-        console.error(error);
-        alert("Arama yapılamadı: " + error.message);
+        console.error("Arama hatası:", error);
+        friendsList.innerHTML =
+            "<p style='padding:20px'>Arama yapılamadı.</p>";
     }
 }
 
 // KULLANICI KARTI
-
-function createUserItem(user) {
+function createUserItem(user, container) {
     const item = document.createElement("div");
     item.className = "chat-item";
 
@@ -315,54 +351,42 @@ function createUserItem(user) {
     info.append(name, description);
     item.append(avatar, info);
 
-    item.addEventListener("click", () => {
-        openChat(user);
-    });
+    item.addEventListener("click", () => openChat(user));
 
-    return item;
+    container.appendChild(item);
+}
+
+// SOHBET ID
+function makeChatId(uid1, uid2) {
+    return [uid1, uid2].sort().join("_");
 }
 
 // SOHBET AÇ
-
 async function openChat(receiver) {
     if (!currentUser) return;
 
     try {
-        const chatsQuery = query(
-            collection(db, "chats"),
-            where("participants", "array-contains", currentUser.uid)
-        );
+        const chatId = makeChatId(currentUser.uid, receiver.uid);
+        const chatRef = doc(db, "chats", chatId);
+        const chatSnap = await getDoc(chatRef);
 
-        const result = await getDocs(chatsQuery);
-
-        let foundChat = null;
-
-        result.forEach(chatDoc => {
-            const participants = chatDoc.data().participants || [];
-
-            if (participants.includes(receiver.uid)) {
-                foundChat = chatDoc.id;
-            }
-        });
-
-        if (foundChat) {
-            activeChatId = foundChat;
-        } else {
-            const newChat = await addDoc(collection(db, "chats"), {
+        if (!chatSnap.exists()) {
+            await setDoc(chatRef, {
                 participants: [currentUser.uid, receiver.uid],
                 createdAt: serverTimestamp(),
+                lastMessage: "",
                 updatedAt: serverTimestamp()
             });
-
-            activeChatId = newChat.id;
         }
 
-        activeReceiver = receiver;
+        currentChatId = chatId;
+        currentReceiver = receiver;
 
-        conversationName.textContent = receiver.username || "Kullanıcı";
+        $("receiverName").textContent = receiver.username || "Kullanıcı";
+        $("receiverStatus").textContent = "Sohbet";
+
         conversationScreen.hidden = false;
-
-        loadMessages();
+        loadMessages(chatId);
 
     } catch (error) {
         alert("Sohbet açılamadı: " + error.message);
@@ -370,182 +394,148 @@ async function openChat(receiver) {
 }
 
 // MESAJLARI YÜKLE
-
-function loadMessages() {
-    if (!activeChatId) return;
-
+function loadMessages(chatId) {
     if (unsubscribeMessages) unsubscribeMessages();
 
-    const messagesRef = collection(
-        db,
-        "chats",
-        activeChatId,
-        "messages"
+    messages.innerHTML = "";
+
+    const q = query(
+        collection(db, "chats", chatId, "messages"),
+        orderBy("createdAt", "asc")
     );
 
-    unsubscribeMessages = onSnapshot(
-        messagesRef,
-        snapshot => {
-            messagesBox.innerHTML = "";
+    unsubscribeMessages = onSnapshot(q, snapshot => {
+        messages.innerHTML = "";
 
-            const messages = snapshot.docs.map(item => ({
-                ...item.data()
-            }));
+        snapshot.forEach(messageDoc => {
+            const data = messageDoc.data();
+            const message = document.createElement("div");
 
-            messages.sort((a, b) => {
-                const timeA = a.createdAt?.toMillis?.() || 0;
-                const timeB = b.createdAt?.toMillis?.() || 0;
+            message.className =
+                "message " +
+                (data.senderId === currentUser.uid ? "sent" : "received");
 
-                return timeA - timeB;
-            });
+            const text = document.createElement("div");
+            text.textContent = data.text;
 
-            messages.forEach(message => {
-                const bubble = document.createElement("div");
+            message.appendChild(text);
+            messages.appendChild(message);
+        });
 
-                bubble.className =
-                    "message " +
-                    (message.senderId === currentUser.uid
-                        ? "sent"
-                        : "received");
+        messages.scrollTop = messages.scrollHeight;
 
-                const text = document.createElement("div");
-                text.textContent = message.text || "";
-
-                bubble.appendChild(text);
-                messagesBox.appendChild(bubble);
-            });
-
-            messagesBox.scrollTop = messagesBox.scrollHeight;
-        },
-        error => {
-            console.error("Mesaj hatası:", error);
-        }
-    );
+    }, error => {
+        console.error("Mesaj yükleme hatası:", error);
+    });
 }
 
 // MESAJ GÖNDER
-
-async function sendMessage() {
-    if (!currentUser || !activeChatId) return;
+messageForm.addEventListener("submit", async event => {
+    event.preventDefault();
 
     const text = messageInput.value.trim();
 
-    if (!text) return;
+    if (!text || !currentChatId || !currentUser) return;
+
+    messageInput.value = "";
 
     try {
         await addDoc(
-            collection(db, "chats", activeChatId, "messages"),
+            collection(db, "chats", currentChatId, "messages"),
             {
-                text: text,
+                text,
                 senderId: currentUser.uid,
                 createdAt: serverTimestamp()
             }
         );
 
-        await setDoc(
-            doc(db, "chats", activeChatId),
-            {
-                updatedAt: serverTimestamp()
-            },
-            { merge: true }
-        );
-
-        messageInput.value = "";
+        await updateDoc(doc(db, "chats", currentChatId), {
+            lastMessage: text,
+            updatedAt: serverTimestamp()
+        });
 
     } catch (error) {
         alert("Mesaj gönderilemedi: " + error.message);
+        messageInput.value = text;
     }
-}
-
-// MESAJ FORMU
-
-messageForm.addEventListener("submit", event => {
-    event.preventDefault();
-    sendMessage();
 });
 
-// SOHBETLERİ YÜKLE
-
+// SOHBET LİSTESİ
 function loadChats() {
-    if (!currentUser) return;
-
     if (unsubscribeChats) unsubscribeChats();
 
-    const chatsQuery = query(
+    const q = query(
         collection(db, "chats"),
         where("participants", "array-contains", currentUser.uid)
     );
 
-    unsubscribeChats = onSnapshot(
-        chatsQuery,
-        async snapshot => {
-            chatList.innerHTML = "";
+    unsubscribeChats = onSnapshot(q, async snapshot => {
+        chatList.innerHTML = "";
 
-            if (snapshot.empty) {
-                const empty = document.createElement("div");
-                empty.className = "empty-state";
-                empty.innerHTML = `
+        if (snapshot.empty) {
+            chatList.innerHTML = `
+                <div class="empty-state">
                     <span>💬</span>
                     <h3>Henüz sohbetin yok</h3>
                     <p>Arkadaşlarını bul ve sohbet etmeye başla.</p>
-                `;
+                </div>
+            `;
+            return;
+        }
 
-                chatList.appendChild(empty);
-                return;
-            }
+        for (const chatDoc of snapshot.docs) {
+            const chat = chatDoc.data();
 
-            const chats = snapshot.docs.map(item => item);
+            const otherUid = chat.participants.find(
+                uid => uid !== currentUser.uid
+            );
 
-            chats.sort((a, b) => {
-                const timeA = a.data().updatedAt?.toMillis?.() || 0;
-                const timeB = b.data().updatedAt?.toMillis?.() || 0;
+            if (!otherUid) continue;
 
-                return timeB - timeA;
-            });
-
-            for (const chatDoc of chats) {
-                const participants = chatDoc.data().participants || [];
-
-                const otherUid = participants.find(
-                    uid => uid !== currentUser.uid
-                );
-
-                if (!otherUid) continue;
-
-                const userSnap = await getDoc(
-                    doc(db, "users", otherUid)
-                );
+            try {
+                const userSnap = await getDoc(doc(db, "users", otherUid));
 
                 if (!userSnap.exists()) continue;
 
-                const otherUser = userSnap.data();
+                const user = userSnap.data();
 
-                const item = createUserItem(otherUser);
+                const item = document.createElement("div");
+                item.className = "chat-item";
+
+                const avatar = document.createElement("div");
+                avatar.className = "chat-avatar";
+                avatar.textContent = "👤";
+
+                const info = document.createElement("div");
+                info.className = "chat-info";
+
+                const name = document.createElement("h4");
+                name.textContent = user.username || "Kullanıcı";
+
+                const last = document.createElement("p");
+                last.textContent = chat.lastMessage || "Sohbet başlatıldı";
+
+                info.append(name, last);
+                item.append(avatar, info);
+
+                item.addEventListener("click", () => {
+                    openChat(user);
+                });
 
                 chatList.appendChild(item);
 
-                item.addEventListener("click", () => {
-                    activeChatId = chatDoc.id;
-                    activeReceiver = otherUser;
-
-                    conversationName.textContent =
-                        otherUser.username || "Kullanıcı";
-
-                    conversationScreen.hidden = false;
-
-                    loadMessages();
-                });
+            } catch (error) {
+                console.error("Sohbet kullanıcısı yüklenemedi:", error);
             }
-        },
-        error => {
-            console.error("Sohbet listesi hatası:", error);
         }
-    );
+
+    }, error => {
+        console.error("Sohbet listesi hatası:", error);
+    });
 }
 
-// SOHBETTEN GERİ DÖN
-
-backBtn.addEventListener("click", () => {
+// GERİ DÖN
+$("backBtn").addEventListener("click", () => {
     conversationScreen.hidden = true;
 
     if (unsubscribeMessages) {
@@ -553,19 +543,23 @@ backBtn.addEventListener("click", () => {
         unsubscribeMessages = null;
     }
 
-    activeChatId = null;
-    activeReceiver = null;
+    currentChatId = null;
+    currentReceiver = null;
 });
 
-// ÇIKIŞ YAP
+// EMOJİ
+$("emojiBtn").addEventListener("click", () => {
+    messageInput.value += " 😊";
+    messageInput.focus();
+});
 
-logoutBtn.addEventListener("click", async () => {
+// ÇIKIŞ
+$("logoutBtn").addEventListener("click", async () => {
     try {
         await signOut(auth);
     } catch (error) {
-        alert(error.message);
+        alert("Çıkış yapılamadı: " + error.message);
     }
 });
 
 console.log("messenApp hazır!");
-    
