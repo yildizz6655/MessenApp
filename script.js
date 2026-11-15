@@ -1,10 +1,10 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
 
 import {
     getAuth,
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
+    sendPasswordResetEmail,
     onAuthStateChanged,
     signOut
 } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-auth.js";
@@ -54,6 +54,7 @@ const loginError = $("loginError");
 
 const loginBtn = $("loginBtn");
 const registerBtn = $("registerBtn");
+const forgotPasswordBtn = $("forgotPasswordBtn");
 
 const userSearch = $("userSearch");
 const friendsList = $("friendsList");
@@ -94,6 +95,44 @@ function translateError(error) {
 
     return errors[error.code] || "Bir hata oluştu: " + error.message;
 }
+
+// ŞİFREMİ UNUTTUM
+forgotPasswordBtn.addEventListener("click", async () => {
+    const email = emailInput.value.trim();
+
+    showError("");
+
+    if (!email) {
+        showError("Önce e-posta adresini yaz.");
+        emailInput.focus();
+        return;
+    }
+
+    if (!emailInput.checkValidity()) {
+        showError("Geçerli bir e-posta adresi gir.");
+        emailInput.focus();
+        return;
+    }
+
+    forgotPasswordBtn.disabled = true;
+    forgotPasswordBtn.textContent = "Gönderiliyor...";
+
+    try {
+        await sendPasswordResetEmail(auth, email);
+
+        showError("");
+        alert(
+            "Şifre yenileme bağlantısı gönderildi!\n\n" +
+            "E-posta gelen kutunu ve spam klasörünü kontrol et."
+        );
+
+    } catch (error) {
+        showError(translateError(error));
+    } finally {
+        forgotPasswordBtn.disabled = false;
+        forgotPasswordBtn.textContent = "Şifremi Unuttum?";
+    }
+});
 
 // HESAP OLUŞTUR
 registerBtn.addEventListener("click", async () => {
@@ -281,7 +320,10 @@ $("profileBtn").addEventListener("click", () => {
 // ARAMA KISAYOLU
 $("searchBtn").addEventListener("click", () => {
     userSearch.focus();
-    userSearch.scrollIntoView({ behavior: "smooth", block: "center" });
+    userSearch.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
 });
 
 // KULLANICI ARAMA
@@ -318,7 +360,8 @@ async function searchUsers(search) {
         });
 
         if (friendsList.innerHTML === "") {
-            friendsList.innerHTML = "<p style='padding:20px'>Kullanıcı bulunamadı.</p>";
+            friendsList.innerHTML =
+                "<p style='padding:20px'>Kullanıcı bulunamadı.</p>";
         }
 
         document.querySelector('[data-tab="friends"]').click();
@@ -382,7 +425,9 @@ async function openChat(receiver) {
         currentChatId = chatId;
         currentReceiver = receiver;
 
-        $("receiverName").textContent = receiver.username || "Kullanıcı";
+        $("receiverName").textContent =
+            receiver.username || "Kullanıcı";
+
         $("receiverStatus").textContent = "Sohbet";
 
         conversationScreen.hidden = false;
@@ -413,7 +458,9 @@ function loadMessages(chatId) {
 
             message.className =
                 "message " +
-                (data.senderId === currentUser.uid ? "sent" : "received");
+                (data.senderId === currentUser.uid
+                    ? "sent"
+                    : "received");
 
             const text = document.createElement("div");
             text.textContent = data.text;
@@ -493,7 +540,9 @@ function loadChats() {
             if (!otherUid) continue;
 
             try {
-                const userSnap = await getDoc(doc(db, "users", otherUid));
+                const userSnap = await getDoc(
+                    doc(db, "users", otherUid)
+                );
 
                 if (!userSnap.exists()) continue;
 
@@ -513,7 +562,8 @@ function loadChats() {
                 name.textContent = user.username || "Kullanıcı";
 
                 const last = document.createElement("p");
-                last.textContent = chat.lastMessage || "Sohbet başlatıldı";
+                last.textContent =
+                    chat.lastMessage || "Sohbet başlatıldı";
 
                 info.append(name, last);
                 item.append(avatar, info);
@@ -525,7 +575,10 @@ function loadChats() {
                 chatList.appendChild(item);
 
             } catch (error) {
-                console.error("Sohbet kullanıcısı yüklenemedi:", error);
+                console.error(
+                    "Sohbet kullanıcısı yüklenemedi:",
+                    error
+                );
             }
         }
 
