@@ -13,23 +13,58 @@
     <!-- GİRİŞ EKRANI -->
     <section id="loginScreen" class="login-screen">
         <div class="login-box">
+
+            <div class="login-logo">m</div>
+
             <h1>messenApp</h1>
-            <p>Arkadaşlarınla bağlantıda kal.</p>
+            <p class="login-subtitle">
+                Arkadaşlarınla bağlantıda kal.
+            </p>
 
-            <input id="email" type="email" placeholder="E-posta adresin">
-            <input id="password" type="password" placeholder="Şifren">
+            <div class="login-form">
 
-            <button id="loginBtn">Giriş Yap</button>
-            <button id="registerBtn">Hesap Oluştur</button>
+                <label for="email">E-posta adresi</label>
+                <input
+                    id="email"
+                    type="email"
+                    placeholder="ornek@email.com"
+                    autocomplete="email"
+                >
 
-            <p id="loginError"></p>
+                <label for="password">Şifre</label>
+                <input
+                    id="password"
+                    type="password"
+                    placeholder="Şifreni gir"
+                    autocomplete="current-password"
+                >
+
+                <button id="loginBtn" class="login-primary">
+                    Giriş Yap
+                </button>
+
+                <div class="login-divider">
+                    <span>VEYA</span>
+                </div>
+
+                <button id="registerBtn" class="login-secondary">
+                    Yeni Hesap Oluştur
+                </button>
+
+            </div>
+
+            <p id="loginError" class="login-error"></p>
+
+            <div class="login-footer">
+                messenApp · Her zaman bağlantıda kal
+            </div>
+
         </div>
     </section>
 
     <!-- ANA UYGULAMA -->
     <main id="appScreen" class="app-screen" hidden>
 
-        <!-- ÜST MENÜ -->
         <header class="top-header">
             <h2>messenApp</h2>
             <div class="header-actions">
@@ -38,7 +73,6 @@
             </div>
         </header>
 
-        <!-- ARAMA -->
         <div class="search-area">
             <input
                 type="text"
@@ -47,14 +81,12 @@
             >
         </div>
 
-        <!-- SEKMELER -->
         <nav class="tabs">
             <button class="tab active" data-tab="chats">Sohbetler</button>
             <button class="tab" data-tab="friends">Kişiler</button>
             <button class="tab" data-tab="profile">Profil</button>
         </nav>
 
-        <!-- SOHBET LİSTESİ -->
         <section id="chatsPage" class="page">
             <div id="chatList" class="chat-list">
                 <div class="empty-state">
@@ -65,13 +97,11 @@
             </div>
         </section>
 
-        <!-- KİŞİLER -->
         <section id="friendsPage" class="page" hidden>
             <h3>Kişiler</h3>
             <div id="friendsList"></div>
         </section>
 
-        <!-- PROFİL -->
         <section id="profilePage" class="page" hidden>
             <div class="profile-content">
                 <div class="profile-avatar">👤</div>
@@ -89,7 +119,6 @@
             </div>
         </section>
 
-        <!-- SOHBET EKRANI -->
         <section id="conversationScreen" class="conversation-screen" hidden>
 
             <header class="conversation-header">
@@ -106,8 +135,7 @@
                 <button id="moreBtn">⋮</button>
             </header>
 
-            <div id="messages" class="messages">
-            </div>
+            <div id="messages" class="messages"></div>
 
             <form id="messageForm" class="message-input-area">
                 <button type="button" id="emojiBtn">☺</button>
@@ -126,9 +154,8 @@
 
     </main>
 
-    <!-- JAVASCRIPT -->
     <script type="module" src="script.js"></script>
 
 </body>
-                                    </html>
-                                    
+                </html>
+                
