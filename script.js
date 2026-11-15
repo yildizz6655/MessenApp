@@ -1,3 +1,4 @@
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-app.js";
 
 import {
@@ -54,7 +55,18 @@ const loginError = $("loginError");
 
 const loginBtn = $("loginBtn");
 const registerBtn = $("registerBtn");
-const forgotPasswordBtn = $("forgotPasswordBtn");
+
+// ŞİFREMİ UNUTTUM BUTONUNU OTOMATİK OLUŞTUR
+let forgotPasswordBtn = $("forgotPasswordBtn");
+
+if (!forgotPasswordBtn && loginBtn) {
+    forgotPasswordBtn = document.createElement("button");
+    forgotPasswordBtn.id = "forgotPasswordBtn";
+    forgotPasswordBtn.type = "button";
+    forgotPasswordBtn.className = "forgot-password";
+    forgotPasswordBtn.textContent = "Şifremi Unuttum?";
+    loginBtn.after(forgotPasswordBtn);
+}
 
 const userSearch = $("userSearch");
 const friendsList = $("friendsList");
@@ -76,7 +88,7 @@ let unsubscribeMessages = null;
 let unsubscribeChats = null;
 
 function showError(message) {
-    loginError.textContent = message;
+    if (loginError) loginError.textContent = message;
 }
 
 function translateError(error) {
@@ -103,13 +115,13 @@ forgotPasswordBtn.addEventListener("click", async () => {
     showError("");
 
     if (!email) {
-        showError("Önce e-posta adresini yaz.");
+        alert("Önce e-posta adresini yaz!");
         emailInput.focus();
         return;
     }
 
     if (!emailInput.checkValidity()) {
-        showError("Geçerli bir e-posta adresi gir.");
+        alert("Geçerli bir e-posta adresi gir!");
         emailInput.focus();
         return;
     }
@@ -120,14 +132,14 @@ forgotPasswordBtn.addEventListener("click", async () => {
     try {
         await sendPasswordResetEmail(auth, email);
 
-        showError("");
         alert(
             "Şifre yenileme bağlantısı gönderildi!\n\n" +
             "E-posta gelen kutunu ve spam klasörünü kontrol et."
         );
 
     } catch (error) {
-        showError(translateError(error));
+        alert("Şifre sıfırlama hatası: " + translateError(error));
+        console.error("Şifre sıfırlama:", error);
     } finally {
         forgotPasswordBtn.disabled = false;
         forgotPasswordBtn.textContent = "Şifremi Unuttum?";
@@ -425,9 +437,7 @@ async function openChat(receiver) {
         currentChatId = chatId;
         currentReceiver = receiver;
 
-        $("receiverName").textContent =
-            receiver.username || "Kullanıcı";
-
+        $("receiverName").textContent = receiver.username || "Kullanıcı";
         $("receiverStatus").textContent = "Sohbet";
 
         conversationScreen.hidden = false;
@@ -458,9 +468,7 @@ function loadMessages(chatId) {
 
             message.className =
                 "message " +
-                (data.senderId === currentUser.uid
-                    ? "sent"
-                    : "received");
+                (data.senderId === currentUser.uid ? "sent" : "received");
 
             const text = document.createElement("div");
             text.textContent = data.text;
@@ -540,9 +548,7 @@ function loadChats() {
             if (!otherUid) continue;
 
             try {
-                const userSnap = await getDoc(
-                    doc(db, "users", otherUid)
-                );
+                const userSnap = await getDoc(doc(db, "users", otherUid));
 
                 if (!userSnap.exists()) continue;
 
@@ -562,8 +568,7 @@ function loadChats() {
                 name.textContent = user.username || "Kullanıcı";
 
                 const last = document.createElement("p");
-                last.textContent =
-                    chat.lastMessage || "Sohbet başlatıldı";
+                last.textContent = chat.lastMessage || "Sohbet başlatıldı";
 
                 info.append(name, last);
                 item.append(avatar, info);
@@ -575,10 +580,7 @@ function loadChats() {
                 chatList.appendChild(item);
 
             } catch (error) {
-                console.error(
-                    "Sohbet kullanıcısı yüklenemedi:",
-                    error
-                );
+                console.error("Sohbet kullanıcısı yüklenemedi:", error);
             }
         }
 
