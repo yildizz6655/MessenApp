@@ -1,4 +1,20 @@
+
 /* PROFESYONEL GİRİŞ EKRANI */
+
+* {
+    box-sizing: border-box;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+/* GİRİŞ EKRANI */
 
 .login-screen {
     min-height: 100vh;
@@ -66,7 +82,6 @@
     background: #f7f9f8;
     font-size: 15px;
     outline: none;
-    box-sizing: border-box;
 }
 
 .login-form input:focus {
@@ -76,12 +91,13 @@
 
 .login-form button {
     width: 100%;
-    height: 52px;
+    min-height: 52px;
     border: none;
     border-radius: 13px;
     font-size: 15px;
     font-weight: bold;
     cursor: pointer;
+    transition: 0.2s;
 }
 
 .login-primary {
@@ -99,6 +115,7 @@
     display: block;
     width: 100%;
     height: auto !important;
+    min-height: 35px !important;
     margin-top: 14px;
     padding: 8px;
     background: transparent;
@@ -142,10 +159,31 @@
     color: #d93025;
     font-size: 13px;
     margin-top: 15px;
+    overflow-wrap: anywhere;
 }
 
 .login-footer {
     margin-top: 28px;
     color: #999;
     font-size: 11px;
+}
+
+/* BUTON YÜKLENME DURUMU */
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* MOBİL UYUMLULUK */
+
+@media (max-width: 480px) {
+    .login-screen {
+        padding: 16px;
+    }
+
+    .login-box {
+        padding: 30px 22px;
+    }
     }
