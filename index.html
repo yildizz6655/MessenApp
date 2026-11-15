@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -9,6 +10,7 @@
 </head>
 <body>
 
+    <!-- GİRİŞ EKRANI -->
     <section id="loginScreen" class="login-screen">
         <div class="login-box">
 
@@ -22,22 +24,16 @@
             <div class="login-form">
 
                 <label for="email">E-posta adresi</label>
-                <input
-                    id="email"
-                    type="email"
+                <input id="email" type="email"
                     placeholder="ornek@email.com"
-                    autocomplete="email"
-                >
+                    autocomplete="email">
 
                 <label for="password">Şifre</label>
-                <input
-                    id="password"
-                    type="password"
+                <input id="password" type="password"
                     placeholder="Şifreni gir"
-                    autocomplete="current-password"
-                >
+                    autocomplete="current-password">
 
-                <button id="loginBtn" class="login-primary">
+                <button type="button" id="loginBtn" class="login-primary">
                     Giriş Yap
                 </button>
 
@@ -49,7 +45,7 @@
                     <span>VEYA</span>
                 </div>
 
-                <button id="registerBtn" class="login-secondary">
+                <button type="button" id="registerBtn" class="login-secondary">
                     Yeni Hesap Oluştur
                 </button>
 
@@ -64,10 +60,12 @@
         </div>
     </section>
 
+    <!-- UYGULAMA EKRANI -->
     <main id="appScreen" class="app-screen" hidden>
 
         <header class="top-header">
             <h2>messenApp</h2>
+
             <div class="header-actions">
                 <button id="searchBtn">⌕</button>
                 <button id="profileBtn">👤</button>
@@ -75,11 +73,8 @@
         </header>
 
         <div class="search-area">
-            <input
-                type="text"
-                id="userSearch"
-                placeholder="Kullanıcı ara..."
-            >
+            <input type="text" id="userSearch"
+                placeholder="Kullanıcı ara...">
         </div>
 
         <nav class="tabs">
@@ -88,6 +83,7 @@
             <button class="tab" data-tab="profile">Profil</button>
         </nav>
 
+        <!-- SOHBETLER -->
         <section id="chatsPage" class="page">
             <div id="chatList" class="chat-list">
                 <div class="empty-state">
@@ -98,32 +94,38 @@
             </div>
         </section>
 
+        <!-- KİŞİLER -->
         <section id="friendsPage" class="page" hidden>
             <h3>Kişiler</h3>
             <div id="friendsList"></div>
         </section>
 
+        <!-- PROFİL -->
         <section id="profilePage" class="page" hidden>
             <div class="profile-content">
                 <div class="profile-avatar">👤</div>
                 <h3 id="profileName">Kullanıcı</h3>
                 <p id="profileEmail"></p>
 
-                <input
-                    id="newUsername"
+                <input id="newUsername"
                     type="text"
-                    placeholder="Yeni kullanıcı adı"
-                >
+                    placeholder="Yeni kullanıcı adı">
 
-                <button id="saveProfileBtn">Profili Kaydet</button>
-                <button id="logoutBtn">Çıkış Yap</button>
+                <button type="button" id="saveProfileBtn">
+                    Profili Kaydet
+                </button>
+
+                <button type="button" id="logoutBtn">
+                    Çıkış Yap
+                </button>
             </div>
         </section>
 
+        <!-- MESAJLAŞMA -->
         <section id="conversationScreen" class="conversation-screen" hidden>
 
             <header class="conversation-header">
-                <button id="backBtn">←</button>
+                <button type="button" id="backBtn">←</button>
 
                 <div class="conversation-user">
                     <div class="small-avatar">👤</div>
@@ -133,7 +135,7 @@
                     </div>
                 </div>
 
-                <button id="moreBtn">⋮</button>
+                <button type="button" id="moreBtn">⋮</button>
             </header>
 
             <div id="messages" class="messages"></div>
@@ -141,12 +143,9 @@
             <form id="messageForm" class="message-input-area">
                 <button type="button" id="emojiBtn">☺</button>
 
-                <input
-                    type="text"
-                    id="messageInput"
+                <input type="text" id="messageInput"
                     placeholder="Mesaj yaz..."
-                    autocomplete="off"
-                >
+                    autocomplete="off">
 
                 <button type="submit" id="sendBtn">➤</button>
             </form>
@@ -158,4 +157,5 @@
     <script type="module" src="script.js"></script>
 
 </body>
-                </html>
+    </html>
+    
