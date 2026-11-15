@@ -26,7 +26,7 @@ import {
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/13.3.0/firebase-firestore.js";
 
-// FIREBASE
+// FIREBASE AYARLARI
 const firebaseConfig = {
     apiKey: "AIzaSyCwwEY9UuOs71ZjHgMIknRIwLqXFsTh6es",
     authDomain: "messenapp-1daa6.firebaseapp.com",
@@ -43,7 +43,7 @@ const db = getFirestore(app);
 
 const $ = id => document.getElementById(id);
 
-// HTML ELEMANLARI
+// ELEMANLAR
 const loginScreen = $("loginScreen");
 const appScreen = $("appScreen");
 const conversationScreen = $("conversationScreen");
@@ -54,6 +54,7 @@ const loginError = $("loginError");
 
 const loginBtn = $("loginBtn");
 const registerBtn = $("registerBtn");
+const forgotPasswordBtn = $("forgotPasswordBtn");
 
 const userSearch = $("userSearch");
 const friendsList = $("friendsList");
@@ -74,58 +75,60 @@ let currentReceiver = null;
 let unsubscribeMessages = null;
 let unsubscribeChats = null;
 
-// HATA GÖSTER
+// HATA MESAJI
 function showError(message) {
-    if (loginError) {
-        loginError.textContent = message;
-    }
+    loginError.textContent = message;
 }
 
 function translateError(error) {
     const errors = {
         "auth/email-already-in-use": "Bu e-posta zaten kayıtlı.",
-        "auth/invalid-email": "Geçerli bir e-posta adresi gir.",
-        "auth/weak-password": "Şifren en az 6 karakter olmalı.",
-        "auth/user-not-found": "Bu hesap bulunamadı.",
+        "auth/invalid-email": "E-posta adresi geçersiz.",
+        "auth/weak-password": "Şifre en az 6 karakter olmalı.",
+        "auth/user-not-found": "Hesap bulunamadı.",
         "auth/wrong-password": "Şifre yanlış.",
         "auth/invalid-credential": "E-posta veya şifre hatalı.",
-        "auth/too-many-requests": "Çok fazla deneme yaptın. Biraz bekle.",
+        "auth/too-many-requests": "Çok fazla deneme yaptın. Bekle.",
         "auth/network-request-failed": "İnternet bağlantını kontrol et.",
-        "auth/operation-not-allowed": "Firebase'de e-posta ile giriş etkin değil.",
-        "auth/unauthorized-domain": "GitHub Pages adresini Firebase yetkili alan adlarına ekle.",
-        "auth/missing-email": "E-posta adresini gir.",
-        "permission-denied": "Firebase Firestore izinlerini kontrol et."
+        "auth/operation-not-allowed": "Firebase e-posta girişini etkinleştir.",
+        "auth/unauthorized-domain": "GitHub Pages alan adını Firebase'e ekle.",
+        "permission-denied": "Firebase güvenlik kurallarını kontrol et."
     };
 
-    return errors[error.code] || "Hata: " + error.message;
+    return errors[error.code] || error.message;
+}
+
+// EKRANLARI DEĞİŞTİR
+function showLoginScreen() {
+    loginScreen.hidden = false;
+    loginScreen.style.display = "flex";
+
+    appScreen.hidden = true;
+    appScreen.style.display = "none";
+
+    conversationScreen.hidden = true;
+    conversationScreen.style.display = "none";
+}
+
+function showAppScreen() {
+    loginScreen.hidden = true;
+    loginScreen.style.display = "none";
+
+    appScreen.hidden = false;
+    appScreen.style.display = "block";
+
+    conversationScreen.hidden = true;
+    conversationScreen.style.display = "none";
 }
 
 // ŞİFREMİ UNUTTUM
-let forgotPasswordBtn = $("forgotPasswordBtn");
-
-if (!forgotPasswordBtn) {
-    forgotPasswordBtn = document.createElement("button");
-    forgotPasswordBtn.id = "forgotPasswordBtn";
-    forgotPasswordBtn.type = "button";
-    forgotPasswordBtn.className = "forgot-password";
-    forgotPasswordBtn.textContent = "Şifremi Unuttum?";
-
-    loginBtn.after(forgotPasswordBtn);
-}
-
 forgotPasswordBtn.addEventListener("click", async () => {
     const email = emailInput.value.trim();
 
     showError("");
 
-    if (!email) {
-        showError("Şifre sıfırlamak için e-posta adresini yaz.");
-        emailInput.focus();
-        return;
-    }
-
-    if (!emailInput.checkValidity()) {
-        showError("Geçerli bir e-posta adresi gir.");
+    if (!email || !emailInput.checkValidity()) {
+        showError("Geçerli e-posta adresini yaz.");
         emailInput.focus();
         return;
     }
@@ -135,9 +138,7 @@ forgotPasswordBtn.addEventListener("click", async () => {
 
     try {
         await sendPasswordResetEmail(auth, email);
-
-        alert("Şifre yenileme bağlantısı e-posta adresine gönderildi. Spam klasörünü de kontrol et.");
-
+        alert("Şifre yenileme bağlantısı gönderildi. Spam klasörünü de kontrol et.");
     } catch (error) {
         showError(translateError(error));
     } finally {
@@ -164,7 +165,7 @@ registerBtn.addEventListener("click", async () => {
     }
 
     if (password.length < 6) {
-        showError("Şifren en az 6 karakter olmalı.");
+        showError("Şifre en az 6 karakter olmalı.");
         return;
     }
 
@@ -173,9 +174,7 @@ registerBtn.addEventListener("click", async () => {
 
     try {
         const result = await createUserWithEmailAndPassword(
-            auth,
-            email,
-            password
+            auth, email, password
         );
 
         const username = email.split("@")[0];
@@ -231,9 +230,7 @@ loginBtn.addEventListener("click", async () => {
 
 // ENTER İLE GİRİŞ
 passwordInput.addEventListener("keydown", event => {
-    if (event.key === "Enter") {
-        loginBtn.click();
-    }
+    if (event.key === "Enter") loginBtn.click();
 });
 
 // OTURUM KONTROLÜ
@@ -241,24 +238,19 @@ onAuthStateChanged(auth, async user => {
     currentUser = user;
 
     if (user) {
-        loginScreen.hidden = true;
-        appScreen.hidden = false;
-        conversationScreen.hidden = true;
-
+        showAppScreen();
         showError("");
 
         try {
             await loadProfile();
             loadChats();
         } catch (error) {
-            console.error("Uygulama yüklenemedi:", error);
-            alert("Uygulama yüklenirken hata: " + error.message);
+            console.error("Yükleme hatası:", error);
+            alert("Uygulama yüklenemedi: " + error.message);
         }
 
     } else {
-        loginScreen.hidden = false;
-        appScreen.hidden = true;
-        conversationScreen.hidden = true;
+        showLoginScreen();
 
         if (unsubscribeChats) {
             unsubscribeChats();
@@ -298,7 +290,6 @@ async function loadProfile() {
 
     } else {
         const data = snap.data();
-
         profileName.textContent = data.username || "Kullanıcı";
         newUsername.value = data.username || "";
     }
@@ -345,6 +336,7 @@ document.querySelectorAll(".tab").forEach(tab => {
         $("profilePage").hidden = tab.dataset.tab !== "profile";
 
         conversationScreen.hidden = true;
+        conversationScreen.style.display = "none";
     });
 });
 
@@ -465,6 +457,8 @@ async function openChat(receiver) {
         $("receiverStatus").textContent = "Sohbet";
 
         conversationScreen.hidden = false;
+        conversationScreen.style.display = "flex";
+
         loadMessages(chatId);
 
     } catch (error) {
@@ -504,7 +498,7 @@ function loadMessages(chatId) {
         messages.scrollTop = messages.scrollHeight;
 
     }, error => {
-        console.error("Mesaj yükleme hatası:", error);
+        console.error("Mesaj hatası:", error);
         alert("Mesajlar yüklenemedi: " + translateError(error));
     });
 }
@@ -603,7 +597,7 @@ function loadChats() {
                 chatList.appendChild(item);
 
             } catch (error) {
-                console.error("Sohbet kullanıcısı yüklenemedi:", error);
+                console.error("Sohbet kullanıcısı hatası:", error);
             }
         }
 
@@ -615,6 +609,7 @@ function loadChats() {
 // GERİ DÖN
 $("backBtn").addEventListener("click", () => {
     conversationScreen.hidden = true;
+    conversationScreen.style.display = "none";
 
     if (unsubscribeMessages) {
         unsubscribeMessages();
@@ -639,6 +634,9 @@ $("logoutBtn").addEventListener("click", async () => {
         alert("Çıkış yapılamadı: " + translateError(error));
     }
 });
+
+// BAŞLANGIÇ
+showLoginScreen();
 
 console.log("messenApp hazır!");
     
