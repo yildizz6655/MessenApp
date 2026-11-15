@@ -1,0 +1,134 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#075e54">
+    <title>messenApp</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- GİRİŞ EKRANI -->
+    <section id="loginScreen" class="login-screen">
+        <div class="login-box">
+            <h1>messenApp</h1>
+            <p>Arkadaşlarınla bağlantıda kal.</p>
+
+            <input id="email" type="email" placeholder="E-posta adresin">
+            <input id="password" type="password" placeholder="Şifren">
+
+            <button id="loginBtn">Giriş Yap</button>
+            <button id="registerBtn">Hesap Oluştur</button>
+
+            <p id="loginError"></p>
+        </div>
+    </section>
+
+    <!-- ANA UYGULAMA -->
+    <main id="appScreen" class="app-screen" hidden>
+
+        <!-- ÜST MENÜ -->
+        <header class="top-header">
+            <h2>messenApp</h2>
+            <div class="header-actions">
+                <button id="searchBtn">⌕</button>
+                <button id="profileBtn">👤</button>
+            </div>
+        </header>
+
+        <!-- ARAMA -->
+        <div class="search-area">
+            <input
+                type="text"
+                id="userSearch"
+                placeholder="Kullanıcı ara..."
+            >
+        </div>
+
+        <!-- SEKMELER -->
+        <nav class="tabs">
+            <button class="tab active" data-tab="chats">Sohbetler</button>
+            <button class="tab" data-tab="friends">Kişiler</button>
+            <button class="tab" data-tab="profile">Profil</button>
+        </nav>
+
+        <!-- SOHBET LİSTESİ -->
+        <section id="chatsPage" class="page">
+            <div id="chatList" class="chat-list">
+                <div class="empty-state">
+                    <span>💬</span>
+                    <h3>Henüz sohbetin yok</h3>
+                    <p>Arkadaşlarını bul ve sohbet etmeye başla.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- KİŞİLER -->
+        <section id="friendsPage" class="page" hidden>
+            <h3>Kişiler</h3>
+            <div id="friendsList"></div>
+        </section>
+
+        <!-- PROFİL -->
+        <section id="profilePage" class="page" hidden>
+            <div class="profile-content">
+                <div class="profile-avatar">👤</div>
+                <h3 id="profileName">Kullanıcı</h3>
+                <p id="profileEmail"></p>
+
+                <input
+                    id="newUsername"
+                    type="text"
+                    placeholder="Yeni kullanıcı adı"
+                >
+
+                <button id="saveProfileBtn">Profili Kaydet</button>
+                <button id="logoutBtn">Çıkış Yap</button>
+            </div>
+        </section>
+
+        <!-- SOHBET EKRANI -->
+        <section id="conversationScreen" class="conversation-screen" hidden>
+
+            <header class="conversation-header">
+                <button id="backBtn">←</button>
+
+                <div class="conversation-user">
+                    <div class="small-avatar">👤</div>
+                    <div>
+                        <h3 id="receiverName">Kullanıcı</h3>
+                        <span id="receiverStatus">Çevrimdışı</span>
+                    </div>
+                </div>
+
+                <button id="moreBtn">⋮</button>
+            </header>
+
+            <div id="messages" class="messages">
+            </div>
+
+            <form id="messageForm" class="message-input-area">
+                <button type="button" id="emojiBtn">☺</button>
+
+                <input
+                    type="text"
+                    id="messageInput"
+                    placeholder="Mesaj yaz..."
+                    autocomplete="off"
+                >
+
+                <button type="submit" id="sendBtn">➤</button>
+            </form>
+
+        </section>
+
+    </main>
+
+    <!-- JAVASCRIPT -->
+    <script type="module" src="script.js"></script>
+
+</body>
+                                    </html>
+                                    
