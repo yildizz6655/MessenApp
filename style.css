@@ -1,4 +1,3 @@
-
 /* PROFESYONEL GİRİŞ EKRANI */
 
 .login-screen {
@@ -67,6 +66,7 @@
     background: #f7f9f8;
     font-size: 15px;
     outline: none;
+    box-sizing: border-box;
 }
 
 .login-form input:focus {
@@ -93,6 +93,22 @@
 .login-primary:active {
     background: #064b43;
     transform: scale(0.98);
+}
+
+.forgot-password {
+    display: block;
+    width: 100%;
+    height: auto !important;
+    margin-top: 14px;
+    padding: 8px;
+    background: transparent;
+    color: #128c7e;
+    font-size: 14px !important;
+    font-weight: 600;
+}
+
+.forgot-password:active {
+    color: #064e46;
 }
 
 .login-divider {
@@ -132,4 +148,4 @@
     margin-top: 28px;
     color: #999;
     font-size: 11px;
-}
+    }
